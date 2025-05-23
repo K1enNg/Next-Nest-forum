@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schemas/user.schema';
 import * as bcrypt from 'bcrypt';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -36,16 +37,31 @@ export class UserService {
     });
   }
 
-  async findAll() {
-    return this.userModel.find().select('-password').exec();
+  async findAll(query: any = {}) {
+    const { limit = 10, offset = 0, ...filter } = query;
+    return this.userModel
+      .find(filter)
+      .select('-password')
+      .skip(Number(offset))
+      .limit(Number(limit))
+      .exec();
   }
 
   async findById(id: string) {
-    const user = await this.userModel.findById(id).select('-password').exec();
+    const user = await this.userModel
+      .findById(id)
+      .select('-password')
+      .exec();
+    
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    
     return user;
+  }
+
+  async findOne(id: string) {
+    return this.userModel.findById(id).select('-password').exec();
   }
 
   async findByEmail(email: string) {
@@ -56,5 +72,9 @@ export class UserService {
     }
     
     return user;
+  }
+
+  async remove(_id: string) {
+    return this.userModel.findByIdAndDelete(_id).exec();
   }
 }

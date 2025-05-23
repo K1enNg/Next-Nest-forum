@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, Query } from '@nestjs/common';
 import { BlogService } from './blog.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
@@ -8,27 +8,31 @@ export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
   @Post()
-  create(@Body() createBlogDto: CreateBlogDto) {
-    return this.blogService.create(createBlogDto);
+  async create(@Body() createBlogDto: CreateBlogDto, @Request() req) {
+    return this.blogService.create(createBlogDto, req.user);
   }
 
   @Get()
-  findAll() {
-    return this.blogService.findAll();
+  async findAll(@Query() query: any) {
+    return this.blogService.findAll(query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.blogService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    return this.blogService.findById(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBlogDto: UpdateBlogDto) {
-    return this.blogService.update(+id, updateBlogDto);
+  async update(
+    @Param('id') id: string,
+    @Body() updateBlogDto: UpdateBlogDto,
+    @Request() req,
+  ) {
+    return this.blogService.update(id, updateBlogDto, req.user._id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.blogService.remove(+id);
+  async remove(@Param('id') id: string, @Request() req) {
+    return this.blogService.remove(id, req.user._id);
   }
 }
