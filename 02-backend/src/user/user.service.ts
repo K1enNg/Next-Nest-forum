@@ -2,17 +2,16 @@ import { Injectable, ConflictException, NotFoundException } from '@nestjs/common
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User, UserDocument } from './schemas/user.schema';
+import { User } from './schemas/user.schema';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(User.name) private userModel: Model<User>,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<UserDocument> {
-    // Check if user already exists
+  async create(createUserDto: CreateUserDto) {
     const existingUser = await this.userModel.findOne({ 
       $or: [
         { email: createUserDto.email },
@@ -31,18 +30,17 @@ export class UserService {
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     
-    // Create and save in one step using create() instead of new + save()
     return this.userModel.create({
       ...createUserDto,
       password: hashedPassword,
     });
   }
 
-  async findAll(): Promise<UserDocument[]> {
+  async findAll() {
     return this.userModel.find().select('-password').exec();
   }
 
-  async findById(id: string): Promise<UserDocument> {
+  async findById(id: string) {
     const user = await this.userModel.findById(id).select('-password').exec();
     if (!user) {
       throw new NotFoundException('User not found');
@@ -50,19 +48,8 @@ export class UserService {
     return user;
   }
 
-  async findByEmail(email: string): Promise<UserDocument> {
+  async findByEmail(email: string) {
     const user = await this.userModel.findOne({ email }).select('+password').exec();
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
-  }
-
-  async updateUser(id: string, updateData: Partial<User>): Promise<UserDocument> {
-    const user = await this.userModel
-      .findByIdAndUpdate(id, updateData, { new: true })
-      .select('-password')
-      .exec();
     
     if (!user) {
       throw new NotFoundException('User not found');

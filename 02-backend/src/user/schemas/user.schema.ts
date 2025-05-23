@@ -1,12 +1,4 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document, Types } from "mongoose";
-
-export type UserDocument = User & Document & {
-  _id: Types.ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
-  comparePassword(candidatePassword: string): Promise<boolean>;
-};
 
 @Schema({ timestamps: true })
 export class User {
@@ -32,8 +24,12 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-// Add method to compare password
 UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-  const bcrypt = await import('bcrypt');
-  return bcrypt.compare(candidatePassword, this.password);
+  try {
+    const bcrypt = await import('bcrypt');
+    const isMatch = await bcrypt.compare(candidatePassword, this.password);
+    return isMatch;
+  } catch (error) {
+    return false;
+  }
 };

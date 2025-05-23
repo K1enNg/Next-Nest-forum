@@ -1,56 +1,47 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from '../user/dto/create-user.dto';
-import { User, UserDocument } from '../user/schemas/user.schema';
-
-type JwtPayload = {
-  email: string;
-  sub: string;
-};
-
-type LoginResponse = {
-  access_token: string;
-  user: Omit<User, 'password'>;
-};
+import { User } from '../user/schemas/user.schema';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<Omit<User, 'password'>> {
-    const user = await this.userService.findByEmail(email);
-    
-    if (user && await user.comparePassword(password)) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password: _, ...result } = user.toObject();
-      return result;
+  async validateUser(email: string, password: string): Promise<User> {
+    try {
+      const user = await this.userService.findByEmail(email);
+      
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      
+      return user;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid credentials');
     }
-    
-    throw new UnauthorizedException('Invalid credentials');
   }
 
-  async login(user: UserDocument): Promise<LoginResponse> {
-    const payload: JwtPayload = { 
+  async login(user: any) {
+    const payload = { 
       email: user.email, 
       sub: user._id.toString() 
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userWithoutPassword } = user.toObject();
-
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: userWithoutPassword,
-    };
+    return this.jwtService.sign(payload);
   }
 
-  async register(createUserDto: CreateUserDto): Promise<UserDocument> {
+  async register(createUserDto: CreateUserDto): Promise<User> {
     const user = await this.userService.create(createUserDto);
     return user;
   }
