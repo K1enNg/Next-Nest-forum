@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, Query, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BlogService } from './blog.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
@@ -8,7 +9,15 @@ export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   async create(@Body() createBlogDto: CreateBlogDto, @Request() req) {
+    console.log('User from request:', req.user);
+    
+    // Make sure we have a valid user object
+    if (!req.user || !req.user._id) {
+      throw new UnauthorizedException('User information is missing');
+    }
+    
     return this.blogService.create(createBlogDto, req.user);
   }
 
@@ -34,5 +43,11 @@ export class BlogController {
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req) {
     return this.blogService.remove(id, req.user._id);
+  }
+
+  @Post(':id/like')
+  @UseGuards(JwtAuthGuard)
+  async likePost(@Param('id') id: string, @Request() req) {
+    return this.blogService.likePost(id, req.user._id);
   }
 }

@@ -8,11 +8,12 @@ import { User } from '../user/schemas/user.schema';
 import { UserSchema } from '../user/schemas/user.schema';
 import { UserModule } from '../user/user.module';
 import { ConfigService } from '@nestjs/config';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
     UserModule,
-    PassportModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
@@ -22,8 +23,8 @@ import { ConfigService } from '@nestjs/config';
     }),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }])
   ],
-  providers: [AuthService],
+  providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
-  exports: [AuthService]
+  exports: [AuthService, PassportModule]
 })
 export class AuthModule {}

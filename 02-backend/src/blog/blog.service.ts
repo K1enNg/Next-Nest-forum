@@ -12,12 +12,14 @@ export class BlogService {
     @InjectModel(Blog.name) private blogModel: Model<Blog>,
   ) {}
 
-  async create(createBlogDto: CreateBlogDto, author: User): Promise<Blog> {
+  async create(createBlogDto: CreateBlogDto, author: any): Promise<Blog> {
     const createdBlog = new this.blogModel({
       ...createBlogDto,
-      author,
+      author: author._id,
     });
+    
     await createdBlog.save();
+    
     return this.findById(createdBlog._id.toString());
   }
 
@@ -41,18 +43,24 @@ export class BlogService {
     return this.blogModel.findById(id).exec();
   }
 
-  async findById(id: string): Promise<Blog> {
+  async findById(id: string): Promise<any> {
     const blog = await this.blogModel
       .findById(id)
       .populate('author', 'username email avatar')
       .populate('likes', 'username')
+      .lean()
       .exec();
     
     if (!blog) {
       throw new NotFoundException('Blog not found');
     }
     
-    return blog;
+    return {
+      ...blog,
+      id: blog._id.toString(),
+      _id: undefined,
+      __v: undefined
+    };
   }
 
   async update(id: string, updateBlogDto: UpdateBlogDto, userId: string): Promise<Blog> {
