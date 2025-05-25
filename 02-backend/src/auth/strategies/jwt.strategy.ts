@@ -20,7 +20,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     async validate(payload: any) {
         try {
-            console.log('JWT payload:', payload);
             
             if (!payload || !payload.sub) {
                 throw new UnauthorizedException('Invalid token payload');
@@ -31,7 +30,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
                 email: payload.email
             };
         } catch (error) {
-            console.error('JWT validation error:', error);
             throw new UnauthorizedException('Invalid token');
         }
     }

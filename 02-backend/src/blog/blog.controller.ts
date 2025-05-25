@@ -11,9 +11,7 @@ export class BlogController {
   @Post()
   @UseGuards(JwtAuthGuard)
   async create(@Body() createBlogDto: CreateBlogDto, @Request() req) {
-    console.log('User from request:', req.user);
     
-    // Make sure we have a valid user object
     if (!req.user || !req.user._id) {
       throw new UnauthorizedException('User information is missing');
     }
